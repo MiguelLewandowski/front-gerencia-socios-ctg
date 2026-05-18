@@ -1,0 +1,129 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+import Badge from '../components/Badge'
+import { INVERNADAS } from '../data/constants'
+import { getSocios } from '../services/sociosService'
+
+const dadosIniciais = getSocios()
+const INVERNADAS_FILTRO = ['Todas as Invernadas', ...INVERNADAS]
+
+const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none'
+
+function iniciais(nome) {
+  const partes = nome.trim().split(' ')
+  return ((partes[0]?.[0] ?? '') + (partes[partes.length - 1]?.[0] ?? '')).toUpperCase()
+}
+
+export default function Socios() {
+  const navigate = useNavigate()
+  const [busca, setBusca] = useState('')
+  const [categoria, setCategoria] = useState('Todas as Categorias')
+  const [status, setStatus] = useState('Todos os Status')
+  const [invernada, setInvernada] = useState('Todas as Invernadas')
+
+  const filtrados = dadosIniciais.filter(s => {
+    const matchBusca = s.nome.toLowerCase().includes(busca.toLowerCase()) || s.cpf.includes(busca)
+    const matchCategoria = categoria === 'Todas as Categorias' || s.status === categoria
+    const matchStatus = status === 'Todos os Status' || s.mensalidade === status
+    const matchInvernada = invernada === 'Todas as Invernadas' || s.invernada === invernada
+    return matchBusca && matchCategoria && matchStatus && matchInvernada
+  })
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+
+      <main className="flex-1 p-6">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4 max-md:flex-col max-md:items-start">
+          <div>
+            <h1 className="text-[#1737b7] text-5xl font-bold max-md:text-4xl">Sócios</h1>
+            <p className="text-gray-500">Gerenciar cadastro de sócios do CTG</p>
+          </div>
+          <div className="flex gap-2.5 flex-wrap">
+            <Link
+              to="/socios/novo"
+              className="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] no-underline"
+            >
+              Cadastrar novo sócio
+            </Link>
+          </div>
+        </div>
+
+        <section className="bg-white rounded-2xl p-5.5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+          <h2 className="text-[#1737b7] text-2xl font-bold mb-5">Filtros</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <input
+              type="text"
+              placeholder="Buscar por nome ou CPF..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              className={inputClass}
+            />
+            <select value={categoria} onChange={e => setCategoria(e.target.value)} className={inputClass}>
+              <option>Todas as Categorias</option>
+              <option>Ativo</option>
+              <option>Inativo</option>
+            </select>
+            <select value={status} onChange={e => setStatus(e.target.value)} className={inputClass}>
+              <option>Todos os Status</option>
+              <option>Em dia</option>
+              <option>Atrasado</option>
+            </select>
+            <select value={invernada} onChange={e => setInvernada(e.target.value)} className={inputClass}>
+              {INVERNADAS_FILTRO.map(inv => <option key={inv}>{inv}</option>)}
+            </select>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl p-5.5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
+          <p className="text-gray-500 mb-4">
+            Mostrando <span className="font-semibold">{filtrados.length}</span> de {dadosIniciais.length} sócios
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[900px]">
+              <thead>
+                <tr>
+                  {['Foto', 'Nome', 'CPF', 'Endereço', 'Categoria', 'Invernada', 'Dependentes', 'Mensalidade', ''].map(h => (
+                    <th key={h} className="text-left py-3.5 px-2.5 border-b border-gray-200 text-sm font-semibold">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtrados.map(s => (
+                  <tr
+                    key={s.id}
+                    className="cursor-pointer hover:bg-blue-50 transition-colors"
+                    onClick={() => navigate(`/socios/${s.id}`)}
+                    title="Clique para ver detalhes"
+                  >
+                    <td className="py-4 px-2.5 border-b border-gray-200">
+                      <div className="w-[42px] h-[42px] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                        {iniciais(s.nome)}
+                      </div>
+                    </td>
+                    <td className="py-4 px-2.5 border-b border-gray-200 text-sm font-medium">{s.nome}</td>
+                    <td className="py-4 px-2.5 border-b border-gray-200 text-sm text-gray-500">{s.cpf}</td>
+                    <td className="py-4 px-2.5 border-b border-gray-200 text-sm text-gray-500">{s.endereco}</td>
+                    <td className="py-4 px-2.5 border-b border-gray-200"><Badge color="green">{s.status}</Badge></td>
+                    <td className="py-4 px-2.5 border-b border-gray-200"><Badge color="purple">{s.invernada}</Badge></td>
+                    <td className="py-4 px-2.5 border-b border-gray-200"><Badge color="blue">{s.dependentes}</Badge></td>
+                    <td className="py-4 px-2.5 border-b border-gray-200">
+                      <Badge color={s.mensalidade === 'Em dia' ? 'green' : 'red'}>{s.mensalidade}</Badge>
+                    </td>
+                    <td className="py-4 px-2.5 border-b border-gray-200 text-blue-600 font-semibold text-sm whitespace-nowrap">
+                      Ver detalhes →
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
