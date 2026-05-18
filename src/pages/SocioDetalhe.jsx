@@ -38,7 +38,7 @@ export default function SocioDetalhe() {
     )
   }
 
-  const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-200'
+  const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
   function setField(key, value) {
     setSalvo(false)
@@ -71,7 +71,8 @@ export default function SocioDetalhe() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 p-6 max-w-[1100px] mx-auto w-full">
+      <main className="flex-1 bg-[#eef3f8]">
+        <div className="max-w-5xl mx-auto px-6 py-7 w-full">
 
         {/* Voltar */}
         <button
@@ -252,6 +253,7 @@ export default function SocioDetalhe() {
           </div>
         </section>
 
+        </div>
       </main>
 
       <Footer />

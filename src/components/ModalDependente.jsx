@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { useToast } from '../contexts/ToastContext'
 
 const campoVazio = { matricula: '', nome: '', cpf: '' }
 
-const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none'
+const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
 export default function ModalDependente({ onFechar, onSalvar }) {
   const [form, setForm] = useState(campoVazio)
+  const toast = useToast()
 
   function setField(key, value) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -13,7 +15,7 @@ export default function ModalDependente({ onFechar, onSalvar }) {
 
   function salvar() {
     if (!form.matricula || !form.nome || !form.cpf) {
-      alert('Preencha os campos obrigatórios.')
+      toast.error('Preencha todos os campos obrigatórios.')
       return
     }
     onSalvar({ ...form })
