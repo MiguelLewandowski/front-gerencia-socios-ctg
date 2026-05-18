@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Pagamento</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <aside class="sidebar">
+        <h2>CTG - Gestão</h2>
+        <ul>
+            <li>Dashboard</li>
+            <li>Sócios</li>
+            <li>Contrato</li>
+            <li>Cartão MTG</li>
+            <li class="active">Pagamentos</li>
+        </ul>
+    </aside>
+
+    <main class="content">
+
+        <h1>Registro de Pagamento</h1>
+        <p class="sub">Dados vindos do sistema</p>
+
+        <section class="card">
+            <h3>Pagamento</h3>
+
+            <div class="grid">
+                <input id="mensalidade_id" disabled placeholder="ID">
+                <input id="data_pagamento" type="date">
+                
+                <input id="forma_pagamento" placeholder="Forma de Pagamento">
+                <input id="valor_pago" placeholder="Valor Pago">
+                
+                <input id="multa" placeholder="Multa/Juros">
+            </div>
+
+            <button class="btn" onclick="salvarPagamento()">Salvar</button>
+        </section>
+
+    </main>
+
+</div>
+
+<script>
+async function carregarPagamento() {
+    try {
+        // 🔥 TROCA AQUI PELA TUA API REAL
+        const response = await fetch("http://localhost:3000/pagamento/8");
+
+        const data = await response.json();
+
+        document.getElementById("mensalidade_id").value = data.mensalidade_id;
+        document.getElementById("data_pagamento").value = data.data_pagamento;
+        document.getElementById("forma_pagamento").value = data.forma_pagamento;
+        document.getElementById("valor_pago").value = data.valor_pago;
+        document.getElementById("multa").value = data.multa_juros_aplicados;
+
+    } catch (erro) {
+        console.error("Erro ao carregar:", erro);
+    }
+}
+
+async function salvarPagamento() {
+    const pagamento = {
+        mensalidade_id: document.getElementById("mensalidade_id").value,
+        data_pagamento: document.getElementById("data_pagamento").value,
+        forma_pagamento: document.getElementById("forma_pagamento").value,
+        valor_pago: document.getElementById("valor_pago").value,
+        multa_juros_aplicados: document.getElementById("multa").value
+    };
+
+    try {
+        // 🔥 TROCA PELA ROTA DO TEU BACK
+        const response = await fetch("http://localhost:3000/pagamento", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(pagamento)
+        });
+
+        if (response.ok) {
+            alert("Pagamento salvo com sucesso!");
+        }
+
+    } catch (erro) {
+        console.error("Erro ao salvar:", erro);
+    }
+}
+
+// carrega ao abrir
+carregarPagamento();
+</script>
+
+</body>
+</html>
