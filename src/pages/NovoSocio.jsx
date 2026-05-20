@@ -5,6 +5,54 @@ import Layout from '../components/Layout'
 import ModalDependente from '../components/ModalDependente'
 import { INVERNADAS } from '../data/constants'
 import { useToast } from '../contexts/ToastContext'
+import { createSocio } from '../services/sociosService'
+
+function validarCPF(cpf) {
+  const limpo = cpf.replace(/\D/g, '')
+  if (limpo.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(limpo)) return false
+
+  let soma = 0
+  let resto
+
+  for (let i = 1; i <= 9; i++) {
+    soma += parseInt(limpo.substring(i - 1, i)) * (11 - i)
+  }
+
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(limpo.substring(9, 10))) return false
+
+  soma = 0
+  for (let i = 1; i <= 10; i++) {
+    soma += parseInt(limpo.substring(i - 1, i)) * (12 - i)
+  }
+
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(limpo.substring(10, 11))) return false
+
+  return true
+}
+
+function formatarCPF(value) {
+  const digitos = value.replace(/\D/g, '')
+  const limitados = digitos.substring(0, 11)
+  
+  if (limitados.length <= 3) return limitados
+  if (limitados.length <= 6) return `${limitados.slice(0, 3)}.${limitados.slice(3)}`
+  if (limitados.length <= 9) return `${limitados.slice(0, 3)}.${limitados.slice(3, 6)}.${limitados.slice(6)}`
+  return `${limitados.slice(0, 3)}.${limitados.slice(3, 6)}.${limitados.slice(6, 9)}-${limitados.slice(9)}`
+}
+
+function formatarTelefone(value) {
+  const digitos = value.replace(/\D/g, '')
+  const limitados = digitos.substring(0, 11)
+  
+  if (limitados.length <= 2) return limitados
+  if (limitados.length <= 7) return `(${limitados.slice(0, 2)}) ${limitados.slice(2)}`
+  return `(${limitados.slice(0, 2)}) ${limitados.slice(2, 7)}-${limitados.slice(7)}`
+}
 
 export default function NovoSocio() {
   const navigate = useNavigate()
@@ -19,6 +67,7 @@ export default function NovoSocio() {
   const [dependentes, setDependentes] = useState([])
   const [modalAberto, setModalAberto] = useState(false)
   const [confirmarCancelamento, setConfirmarCancelamento] = useState(false)
+  const [cadastrando, setCadastrando] = useState(false)
 
   const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
@@ -38,8 +87,30 @@ export default function NovoSocio() {
       toast.error('Preencha os campos obrigatórios: Nome e CPF.')
       return
     }
-    toast.success('Sócio cadastrado com sucesso!')
-    navigate('/socios')
+
+    if (!validarCPF(form.cpf)) {
+      toast.error('O CPF informado é inválido. Por favor, verifique os dígitos.')
+      return
+    }
+
+    setCadastrando(true)
+    createSocio(form)
+      .then(() => {
+        toast.success('Sócio cadastrado com sucesso!')
+        navigate('/socios')
+      })
+      .catch(err => {
+        console.error(err)
+        setCadastrando(false)
+
+        if (err.isNetworkError) {
+          toast.error(err.message)
+        } else if (err.status === 500 || err.message === 'Unable to process this request!') {
+          toast.error('Este CPF já está cadastrado ou há um conflito de dados no servidor.')
+        } else {
+          toast.error(`Erro ao cadastrar sócio: ${err.message}`)
+        }
+      })
   }
 
   return (
@@ -64,7 +135,7 @@ export default function NovoSocio() {
               </div>
               <div className="flex-1">
                 <label className="text-sm font-bold block mb-2">Foto do Sócio</label>
-                <input type="file" accept="image/*" className="text-sm" />
+                <input type="file" accept="image/*" className="text-sm" disabled={cadastrando} />
                 <small className="text-gray-500 block mt-1">Formatos aceitos: JPG, PNG, GIF</small>
               </div>
             </div>
@@ -73,46 +144,46 @@ export default function NovoSocio() {
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-sm font-bold">Nome Completo *</label>
                 <input type="text" placeholder="Digite o nome completo" value={form.nome}
-                  onChange={e => setField('nome', e.target.value)} className={inputClass} />
+                  onChange={e => setField('nome', e.target.value)} className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">CPF *</label>
-                <input type="text" placeholder="000.000.000-00" maxLength={11}
+                <input type="text" placeholder="000.000.000-00" maxLength={14}
                   value={form.cpf}
-                  onChange={e => setField('cpf', e.target.value.replace(/\D/g, ''))}
-                  className={inputClass} />
+                  onChange={e => setField('cpf', formatarCPF(e.target.value))}
+                  className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Data de Nascimento *</label>
                 <input type="date" value={form.data_nascimento}
-                  onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} />
+                  onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Telefone *</label>
-                <input type="text" placeholder="(00) 00000-0000" maxLength={11}
+                <input type="text" placeholder="(00) 00000-0000"
                   value={form.telefone}
-                  onChange={e => setField('telefone', e.target.value.replace(/\D/g, ''))}
-                  className={inputClass} />
+                  onChange={e => setField('telefone', formatarTelefone(e.target.value))}
+                  className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">E-mail *</label>
                 <input type="email" placeholder="exemplo@email.com" value={form.email}
-                  onChange={e => setField('email', e.target.value)} className={inputClass} />
+                  onChange={e => setField('email', e.target.value)} className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-sm font-bold">Endereço Completo *</label>
                 <input type="text" placeholder="Rua, Número, Bairro - Cidade/UF" value={form.endereco}
-                  onChange={e => setField('endereco', e.target.value)} className={inputClass} />
+                  onChange={e => setField('endereco', e.target.value)} className={inputClass} disabled={cadastrando} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Categoria *</label>
-                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass}>
+                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass} disabled={cadastrando}>
                   <option>Ativo</option>
                   <option>Inativo</option>
                 </select>
@@ -120,7 +191,7 @@ export default function NovoSocio() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Status de Pagamento *</label>
-                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass}>
+                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass} disabled={cadastrando}>
                   <option>Em dia</option>
                   <option>Atrasado</option>
                 </select>
@@ -128,7 +199,7 @@ export default function NovoSocio() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Invernada de Dança *</label>
-                <select value={form.invernada} onChange={e => setField('invernada', e.target.value)} className={inputClass}>
+                <select value={form.invernada} onChange={e => setField('invernada', e.target.value)} className={inputClass} disabled={cadastrando}>
                   {INVERNADAS.map(inv => <option key={inv}>{inv}</option>)}
                 </select>
               </div>
@@ -165,7 +236,8 @@ export default function NovoSocio() {
               <h2 className="text-[#1a3560] text-xl font-bold">Dependentes</h2>
               <button
                 onClick={() => setModalAberto(true)}
-                className="border border-blue-300 text-blue-600 bg-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors cursor-pointer"
+                disabled={cadastrando}
+                className="border border-blue-300 text-blue-600 bg-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 + Adicionar Dependente
               </button>
@@ -202,15 +274,24 @@ export default function NovoSocio() {
               <>
                 <button
                   onClick={() => setConfirmarCancelamento(true)}
-                  className="bg-white border border-slate-300 text-gray-700 px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                  disabled={cadastrando}
+                  className="bg-white border border-slate-300 text-gray-700 px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={cadastrar}
-                  className="bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer"
+                  disabled={cadastrando}
+                  className="bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  Cadastrar Sócio
+                  {cadastrando ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Cadastrando...
+                    </>
+                  ) : (
+                    'Cadastrar Sócio'
+                  )}
                 </button>
               </>
             )}

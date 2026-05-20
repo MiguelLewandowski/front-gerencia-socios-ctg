@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight, Users } from 'lucide-react'
 import Layout from '../components/Layout'
@@ -6,26 +6,42 @@ import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import { INVERNADAS } from '../data/constants'
 import { getSocios } from '../services/sociosService'
+import { useToast } from '../contexts/ToastContext'
 
-const dadosIniciais = getSocios()
 const INVERNADAS_FILTRO = ['Todas as Invernadas', ...INVERNADAS]
 
 const inputClass = 'w-full px-3.5 py-3.5 border-none rounded-xl bg-gray-100 text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-colors'
 
 function iniciais(nome) {
-  const partes = nome.trim().split(' ')
+  const partes = (nome || '').trim().split(' ')
   return ((partes[0]?.[0] ?? '') + (partes[partes.length - 1]?.[0] ?? '')).toUpperCase()
 }
 
 export default function Socios() {
   const navigate = useNavigate()
+  const toast = useToast()
+  const [dadosIniciais, setDadosIniciais] = useState([])
+  const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('Todas as Categorias')
   const [status, setStatus] = useState('Todos os Status')
   const [invernada, setInvernada] = useState('Todas as Invernadas')
 
+  useEffect(() => {
+    getSocios()
+      .then(data => {
+        setDadosIniciais(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        toast.error(`Erro ao carregar sócios: ${err.message}`)
+        setLoading(false)
+      })
+  }, [toast])
+
   const filtrados = dadosIniciais.filter(s => {
-    const matchBusca = s.nome.toLowerCase().includes(busca.toLowerCase()) || s.cpf.includes(busca)
+    const matchBusca = (s.nome || '').toLowerCase().includes(busca.toLowerCase()) || (s.cpf || '').includes(busca)
     const matchCategoria = categoria === 'Todas as Categorias' || s.status === categoria
     const matchStatus = status === 'Todos os Status' || s.mensalidade === status
     const matchInvernada = invernada === 'Todas as Invernadas' || s.invernada === invernada
@@ -79,11 +95,18 @@ export default function Socios() {
           </section>
 
           <section className="bg-white rounded-2xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] mb-6">
-            <p className="text-gray-500 mb-4 text-sm">
-              Mostrando <span className="font-semibold">{filtrados.length}</span> de {dadosIniciais.length} sócios
-            </p>
+            {!loading && (
+              <p className="text-gray-500 mb-4 text-sm">
+                Mostrando <span className="font-semibold">{filtrados.length}</span> de {dadosIniciais.length} sócios
+              </p>
+            )}
 
-            {filtrados.length === 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                <p className="text-gray-500 text-sm">Carregando sócios...</p>
+              </div>
+            ) : filtrados.length === 0 ? (
               <EmptyState
                 icon={<Users size={40} />}
                 title="Nenhum sócio encontrado"

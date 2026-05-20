@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useReducer, useCallback, useMemo } from 'react'
 import { X } from 'lucide-react'
 
 const ToastCtx = createContext(null)
@@ -44,11 +45,11 @@ export function ToastProvider({ children }) {
     setTimeout(() => dispatch({ type: 'DEL', id: item.id }), 4000)
   }, [])
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: msg => add(msg, 'success'),
     error:   msg => add(msg, 'error'),
     info:    msg => add(msg, 'info'),
-  }
+  }), [add])
 
   return (
     <ToastCtx.Provider value={toast}>

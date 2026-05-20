@@ -1,32 +1,109 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import ModalPagamento from '../components/ModalPagamento'
 import { INVERNADAS } from '../data/constants'
-import { getSocioById } from '../services/sociosService'
+import { getSocioById, updateSocio } from '../services/sociosService'
+import { useToast } from '../contexts/ToastContext'
 
 function iniciais(nome) {
-  const partes = nome.trim().split(' ')
+  const partes = (nome || '').trim().split(' ')
   const primeira = partes[0]?.[0] ?? ''
   const ultima = partes[partes.length - 1]?.[0] ?? ''
   return (primeira + ultima).toUpperCase()
 }
 
+function validarCPF(cpf) {
+  const limpo = cpf.replace(/\D/g, '')
+  if (limpo.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(limpo)) return false
+
+  let soma = 0
+  let resto
+
+  for (let i = 1; i <= 9; i++) {
+    soma += parseInt(limpo.substring(i - 1, i)) * (11 - i)
+  }
+
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(limpo.substring(9, 10))) return false
+
+  soma = 0
+  for (let i = 1; i <= 10; i++) {
+    soma += parseInt(limpo.substring(i - 1, i)) * (12 - i)
+  }
+
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(limpo.substring(10, 11))) return false
+
+  return true
+}
+
+function formatarCPF(value) {
+  const digitos = value.replace(/\D/g, '')
+  const limitados = digitos.substring(0, 11)
+  
+  if (limitados.length <= 3) return limitados
+  if (limitados.length <= 6) return `${limitados.slice(0, 3)}.${limitados.slice(3)}`
+  if (limitados.length <= 9) return `${limitados.slice(0, 3)}.${limitados.slice(3, 6)}.${limitados.slice(6)}`
+  return `${limitados.slice(0, 3)}.${limitados.slice(3, 6)}.${limitados.slice(6, 9)}-${limitados.slice(9)}`
+}
+
+function formatarTelefone(value) {
+  const digitos = value.replace(/\D/g, '')
+  const limitados = digitos.substring(0, 11)
+  
+  if (limitados.length <= 2) return limitados
+  if (limitados.length <= 7) return `(${limitados.slice(0, 2)}) ${limitados.slice(2)}`
+  return `(${limitados.slice(0, 2)}) ${limitados.slice(2, 7)}-${limitados.slice(7)}`
+}
+
 export default function SocioDetalhe() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const original = getSocioById(id)
+  const toast = useToast()
 
-  const [form, setForm] = useState(original ? { ...original } : null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [original, setOriginal] = useState(null)
+  const [form, setForm] = useState(null)
   const [salvo, setSalvo] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
+
+  useEffect(() => {
+    getSocioById(id)
+      .then(data => {
+        setOriginal(data)
+        setForm({ ...data })
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [id])
+
+  if (loading) {
+    return (
+      <Layout>
+        <main className="flex-1 bg-[#f0f2f5] flex items-center justify-center py-24">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+            <p className="text-gray-500 text-sm">Carregando detalhes do sócio...</p>
+          </div>
+        </main>
+      </Layout>
+    )
+  }
 
   if (!form) {
     return (
       <Layout>
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center">
+        <main className="flex-1 flex items-center justify-center p-6 bg-[#f0f2f5]">
+          <div className="text-center bg-white p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
             <p className="text-gray-500 text-lg mb-4">Sócio não encontrado.</p>
             <Link to="/socios" className="text-blue-600 font-bold hover:underline">← Voltar para Sócios</Link>
           </div>
@@ -43,7 +120,37 @@ export default function SocioDetalhe() {
   }
 
   function salvar() {
-    setSalvo(true)
+    if (!form.nome || !form.cpf) {
+      toast.error('Preencha os campos obrigatórios: Nome e CPF.')
+      return
+    }
+
+    if (!validarCPF(form.cpf)) {
+      toast.error('O CPF informado é inválido. Por favor, verifique os dígitos.')
+      return
+    }
+
+    setSaving(true)
+    setSalvo(false)
+    updateSocio(id, form)
+      .then(() => {
+        setOriginal({ ...form })
+        setSalvo(true)
+        setSaving(false)
+        toast.success('Alterações salvas com sucesso!')
+      })
+      .catch(err => {
+        console.error(err)
+        setSaving(false)
+
+        if (err.isNetworkError) {
+          toast.error(err.message)
+        } else if (err.status === 500 || err.message === 'Unable to process this request!') {
+          toast.error('Este CPF já está cadastrado ou há um conflito de dados no servidor.')
+        } else {
+          toast.error(`Erro ao salvar alterações do sócio: ${err.message}`)
+        }
+      })
   }
 
   function cancelar() {
@@ -112,37 +219,37 @@ export default function SocioDetalhe() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-sm font-bold">Nome Completo *</label>
-                <input type="text" value={form.nome} onChange={e => setField('nome', e.target.value)} className={inputClass} />
+                <input type="text" value={form.nome} onChange={e => setField('nome', e.target.value)} className={inputClass} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">CPF *</label>
-                <input type="text" value={form.cpf} onChange={e => setField('cpf', e.target.value)} className={inputClass} />
+                <input type="text" value={form.cpf} onChange={e => setField('cpf', formatarCPF(e.target.value))} className={inputClass} maxLength={14} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Data de Nascimento</label>
-                <input type="date" value={form.data_nascimento} onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} />
+                <input type="date" value={form.data_nascimento} onChange={e => setField('data_nascimento', e.target.value)} className={inputClass} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Telefone</label>
-                <input type="text" value={form.telefone} onChange={e => setField('telefone', e.target.value.replace(/\D/g, ''))} className={inputClass} />
+                <input type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={e => setField('telefone', formatarTelefone(e.target.value))} className={inputClass} maxLength={15} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">E-mail</label>
-                <input type="email" value={form.email} onChange={e => setField('email', e.target.value)} className={inputClass} />
+                <input type="email" value={form.email} onChange={e => setField('email', e.target.value)} className={inputClass} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label className="text-sm font-bold">Endereço Completo</label>
-                <input type="text" value={form.endereco} onChange={e => setField('endereco', e.target.value)} className={inputClass} />
+                <input type="text" value={form.endereco} onChange={e => setField('endereco', e.target.value)} className={inputClass} disabled={saving} />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Categoria</label>
-                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass}>
+                <select value={form.status} onChange={e => setField('status', e.target.value)} className={inputClass} disabled={saving}>
                   <option>Ativo</option>
                   <option>Inativo</option>
                 </select>
@@ -150,7 +257,7 @@ export default function SocioDetalhe() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Status de Pagamento</label>
-                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass}>
+                <select value={form.mensalidade} onChange={e => setField('mensalidade', e.target.value)} className={inputClass} disabled={saving}>
                   <option>Em dia</option>
                   <option>Atrasado</option>
                 </select>
@@ -158,7 +265,7 @@ export default function SocioDetalhe() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Invernada de Dança</label>
-                <select value={form.invernada} onChange={e => setField('invernada', e.target.value)} className={inputClass}>
+                <select value={form.invernada} onChange={e => setField('invernada', e.target.value)} className={inputClass} disabled={saving}>
                   {INVERNADAS.map(inv => <option key={inv}>{inv}</option>)}
                 </select>
               </div>
@@ -166,22 +273,31 @@ export default function SocioDetalhe() {
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Número de Dependentes</label>
                 <input type="number" value={form.dependentes}
-                  onChange={e => setField('dependentes', Number(e.target.value))} className={inputClass} />
+                  onChange={e => setField('dependentes', Number(e.target.value))} className={inputClass} disabled={saving} />
               </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={cancelar}
-                className="bg-white border border-slate-300 text-gray-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                disabled={saving}
+                className="bg-white border border-slate-300 text-gray-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Desfazer alterações
               </button>
               <button
                 onClick={salvar}
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer"
+                disabled={saving}
+                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-[0_4px_12px_rgba(37,99,235,0.3)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
-                Salvar Alterações
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
               </button>
             </div>
           </div>

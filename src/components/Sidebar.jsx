@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Users, FileText, CreditCard, Menu, X } from 'lucide-react'
+import logo from '../../modelos/css/image_ctg_logo.png'
 
 const links = [
   { to: '/',           label: 'Painel',     icon: LayoutDashboard, end: true },
@@ -44,9 +45,11 @@ export default function Sidebar() {
         {/* Cabeçalho */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-white/10">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center font-bold text-[#1a3560] text-xs shrink-0">
-              CTG
-            </div>
+            <img
+              src={logo}
+              alt="CTG Logo"
+              className="w-10 h-10 rounded-full shrink-0 object-contain bg-white p-0.5"
+            />
             <div className="min-w-0">
               <p className="font-bold text-sm leading-tight truncate">CTG Raízes da Tradição</p>
               <p className="text-[11px] opacity-60 mt-0.5">Sistema de Gerenciamento</p>
@@ -66,24 +69,27 @@ export default function Sidebar() {
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 px-3 mb-3">
             Navegação
           </p>
-          {links.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-white text-[#1a3560] font-semibold shadow-sm'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
+          {links.map((link) => {
+            const { to, label, icon: Icon, end } = link
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                    isActive
+                      ? 'bg-white text-[#1a3560] font-semibold shadow-sm'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {label}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Rodapé */}

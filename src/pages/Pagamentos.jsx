@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CheckCircle, Clock, CreditCard, Search, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
 import EmptyState from '../components/EmptyState'
 import ModalPagamento from '../components/ModalPagamento'
 import { getSocios } from '../services/sociosService'
+import { useToast } from '../contexts/ToastContext'
 
 const MESES_NOMES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -34,17 +35,32 @@ function parseMoeda(str) {
 }
 
 export default function Pagamentos() {
-  const [socios, setSocios] = useState(getSocios)
+  const toast = useToast()
+  const [socios, setSocios] = useState([])
+  const [loading, setLoading] = useState(true)
   const [mesIdx, setMesIdx] = useState(0)
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Todos')
   const [modalSocio, setModalSocio] = useState(null)
 
+  useEffect(() => {
+    getSocios()
+      .then(data => {
+        setSocios(data)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        toast.error(`Erro ao carregar dados de pagamentos: ${err.message}`)
+        setLoading(false)
+      })
+  }, [toast])
+
   const mesSelecionado = MESES[mesIdx]
 
   const sociosComStatus = useMemo(() =>
     socios.map(s => {
-      const pag = s.pagamentos.find(p => p.mes === mesSelecionado)
+      const pag = (s.pagamentos || []).find(p => p.mes === mesSelecionado)
       return {
         ...s,
         statusMes: pag ? pag.status : 'Pendente',
@@ -61,7 +77,7 @@ export default function Pagamentos() {
     .reduce((acc, s) => acc + parseMoeda(s.valorPagamento), 0)
 
   const filtrados = sociosComStatus.filter(s => {
-    const matchBusca = s.nome.toLowerCase().includes(busca.toLowerCase())
+    const matchBusca = (s.nome || '').toLowerCase().includes(busca.toLowerCase())
     const matchStatus = filtroStatus === 'Todos' || s.statusMes === filtroStatus
     return matchBusca && matchStatus
   })
@@ -70,12 +86,25 @@ export default function Pagamentos() {
     setSocios(prev => prev.map(s =>
       s.id !== modalSocio.id ? s : {
         ...s,
-        pagamentos: [pagamento, ...s.pagamentos],
+        pagamentos: [pagamento, ...(s.pagamentos || [])],
         mensalidade: 'Em dia',
         ultimoPagamento: pagamento.data,
       }
     ))
     setModalSocio(null)
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <main className="flex-1 bg-[#f0f2f5] flex items-center justify-center py-24">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+            <p className="text-gray-500 text-sm">Carregando dados de pagamentos...</p>
+          </div>
+        </main>
+      </Layout>
+    )
   }
 
   return (
