@@ -5,23 +5,10 @@ import { getSocios, getMensalidades, getPagamentos } from '../services/sociosSer
 import { useToast } from '../contexts/ToastContext'
 import { INVERNADAS } from '../data/constants'
 import { exportarExcel, exportarWord, exportarPDF } from '../utils/reportExporter'
+import { MESES_NOMES, gerarMeses } from '../utils/formattingUtils'
 
-const MESES_NOMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
+const MESES_FILTRO = gerarMeses(13)
 
-function gerarMesesOpcoes(quantidade = 13) {
-  const hoje = new Date()
-  const lista = []
-  for (let i = 0; i < quantidade; i++) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-    lista.push(`${MESES_NOMES[d.getMonth()]}/${d.getFullYear()}`)
-  }
-  return lista
-}
-
-const MESES_FILTRO = gerarMesesOpcoes()
 
 export default function Relatorios() {
   const toast = useToast()

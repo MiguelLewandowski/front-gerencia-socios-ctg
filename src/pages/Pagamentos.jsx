@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { CheckCircle, Clock, CreditCard, Search, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import Layout from '../components/Layout'
 import Badge from '../components/Badge'
@@ -13,35 +13,10 @@ import {
   createPagamento
 } from '../services/sociosService'
 import { useToast } from '../contexts/ToastContext'
-
-const MESES_NOMES = [
-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
-]
-
-function gerarMeses(quantidade = 13) {
-  const hoje = new Date()
-  const lista = []
-  for (let i = 0; i < quantidade; i++) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-    lista.push(`${MESES_NOMES[d.getMonth()]}/${d.getFullYear()}`)
-  }
-  return lista
-}
+import { MESES_NOMES, gerarMeses, iniciais, parseMoeda } from '../utils/formattingUtils'
 
 const MESES = gerarMeses()
 
-function iniciais(nome) {
-  const partes = (nome || '').trim().split(' ')
-  return ((partes[0]?.[0] ?? '') + (partes[partes.length - 1]?.[0] ?? '')).toUpperCase()
-}
-
-function parseMoeda(val) {
-  if (typeof val === 'number') return val
-  const str = String(val ?? '80.00')
-  const n = parseFloat(str.replace(/[^\d,]/g, '').replace(',', '.'))
-  return isNaN(n) ? 80 : n
-}
 
 export default function Pagamentos() {
   const toast = useToast()
@@ -54,7 +29,7 @@ export default function Pagamentos() {
   const [filtroStatus, setFiltroStatus] = useState('Todos')
   const [modalSocio, setModalSocio] = useState(null)
 
-  const carregarDados = () => {
+  const carregarDados = useCallback(() => {
     setLoading(true)
     Promise.all([getSocios(), getMensalidades(), getPagamentos()])
       .then(([sociosData, mensalidadesData, pagamentosData]) => {
@@ -68,11 +43,11 @@ export default function Pagamentos() {
         toast.error(`Erro ao carregar dados de pagamentos: ${err.message}`)
         setLoading(false)
       })
-  }
+  }, [toast])
 
   useEffect(() => {
     carregarDados()
-  }, [toast])
+  }, [carregarDados])
 
   const mesSelecionado = MESES[mesIdx]
 

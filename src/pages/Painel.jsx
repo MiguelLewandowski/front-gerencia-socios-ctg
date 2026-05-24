@@ -6,43 +6,7 @@ import Badge from '../components/Badge'
 import StatCard from '../components/StatCard'
 import EmptyState from '../components/EmptyState'
 import { getSocios, getMensalidades } from '../services/sociosService'
-
-function parseDate(str) {
-  if (!str) return new Date(0)
-  if (str.includes('-')) {
-    const [y, m, d] = str.split('-')
-    return new Date(y, m - 1, d)
-  }
-  if (str.includes('/')) {
-    const [d, m, y] = str.split('/')
-    return new Date(y, m - 1, d)
-  }
-  return new Date(str)
-}
-
-function formatDateBR(str) {
-  if (!str) return ''
-  if (str.includes('-')) {
-    const [y, m, d] = str.split('-')
-    return `${d}/${m}/${y}`
-  }
-  return str
-}
-
-const MESES_NOMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
-
-function gerarMeses(quantidade = 13) {
-  const hoje = new Date()
-  const lista = []
-  for (let i = 0; i < quantidade; i++) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1)
-    lista.push(`${MESES_NOMES[d.getMonth()]}/${d.getFullYear()}`)
-  }
-  return lista
-}
+import { MESES_NOMES, gerarMeses, parseDate, formatDateBR } from '../utils/formattingUtils'
 
 const MESES = gerarMeses()
 
