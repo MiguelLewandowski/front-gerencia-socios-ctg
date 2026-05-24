@@ -36,6 +36,7 @@ export default function ModalPagamento({ nomeSocio, mesPadrao, onFechar, onSalva
   const [mes, setMes] = useState(() => mesPadrao ?? MESES_OPCOES[0])
   const [valor, setValor] = useState('R$ 80,00')
   const [data, setData] = useState(hojeISO())
+  const [formaPagamento, setFormaPagamento] = useState('Transferencia')
   const [confirmado, setConfirmado] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -45,7 +46,13 @@ export default function ModalPagamento({ nomeSocio, mesPadrao, onFechar, onSalva
       return
     }
     setErro('')
-    onSalvar({ mes, valor: valor.trim(), status: 'Pago', data: isoParaBR(data) })
+    onSalvar({
+      mesStr: mes,
+      valorStr: valor.trim(),
+      status: 'Pago',
+      dataIso: data,
+      formaPagamento
+    })
     setConfirmado(true)
   }
 
@@ -123,6 +130,15 @@ export default function ModalPagamento({ nomeSocio, mesPadrao, onFechar, onSalva
                 />
               </div>
             </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold">Forma de Pagamento</label>
+              <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)} className={inputClass}>
+                <option value="Transferencia">Pix / Transferência</option>
+                <option value="Cartao">Cartão</option>
+                <option value="Dinheiro">Dinheiro</option>
+              </select>
+            </div>
           </div>
 
           {/* Preview em tempo real */}
@@ -144,6 +160,12 @@ export default function ModalPagamento({ nomeSocio, mesPadrao, onFechar, onSalva
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Data</span>
                 <span className="font-semibold text-gray-800">{isoParaBR(data)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Forma</span>
+                <span className="font-semibold text-gray-800">
+                  {formaPagamento === 'Transferencia' ? 'Pix / Transferência' : formaPagamento === 'Cartao' ? 'Cartão' : 'Dinheiro'}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Status</span>

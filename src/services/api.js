@@ -236,5 +236,163 @@ export const api = {
       }
       throw err;
     }
+  },
+
+  // === MENSALIDADES ===
+  async getMensalidades() {
+    try {
+      const res = await fetch(`${BASE_URL}/mensalidades`);
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao buscar mensalidades');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async createMensalidade(data) {
+    try {
+      const res = await fetch(`${BASE_URL}/mensalidades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao criar mensalidade');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async updateMensalidade(id, data) {
+    try {
+      const res = await fetch(`${BASE_URL}/mensalidades/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao atualizar mensalidade');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async deleteMensalidade(id) {
+    try {
+      const res = await fetch(`${BASE_URL}/mensalidades/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao excluir mensalidade');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  // === PAGAMENTOS ===
+  async getPagamentos() {
+    try {
+      const res = await fetch(`${BASE_URL}/pagamentos`);
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao buscar pagamentos');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async createPagamento(data) {
+    try {
+      const res = await fetch(`${BASE_URL}/pagamentos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao registrar pagamento');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async updatePagamento(id, data) {
+    try {
+      const res = await fetch(`${BASE_URL}/pagamentos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao atualizar pagamento');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
+  },
+
+  async deletePagamento(id) {
+    try {
+      const res = await fetch(`${BASE_URL}/pagamentos/${id}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        throw await parseError(res, 'Erro ao excluir pagamento');
+      }
+      return await res.json();
+    } catch (err) {
+      if (err instanceof TypeError || err.message === 'Failed to fetch') {
+        const networkErr = new Error('Falha de comunicação com o servidor. Verifique se o backend está rodando.');
+        networkErr.isNetworkError = true;
+        throw networkErr;
+      }
+      throw err;
+    }
   }
 };
