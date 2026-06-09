@@ -7,6 +7,7 @@ import { INVERNADAS } from '../data/constants'
 import { useToast } from '../contexts/ToastContext'
 import { validarCPF, formatarCPF, formatarTelefone, formatarCEP, validarCEP } from '../utils/formattingUtils'
 import { socioService } from '../services/socioService'
+import { dependenteService } from '../services/dependenteService'
 
 
 export default function NovoSocio() {
@@ -18,6 +19,7 @@ export default function NovoSocio() {
     logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '',
     status: 'Ativo', mensalidade: 'Pendente',
     invernada: 'Nenhuma', numeroDependentes: 0,
+    dancarino: false,
   })
 
   const [dependentes, setDependentes] = useState([])
@@ -56,7 +58,30 @@ export default function NovoSocio() {
 
     setCadastrando(true)
     socioService.create(form)
-      .then(() => {
+      .then(async (created) => {
+        // try to persist dependentes if any
+        if (dependentes.length) {
+          try {
+            await Promise.all(dependentes.map(dep => {
+              const payload = {
+                socio_id: created.id,
+                nome: dep.nome,
+                cpf: dep.cpf,
+                telefone: dep.telefone || '',
+                data_nascimento: dep.data_nascimento || null,
+                dancarino: dep.dancarino ?? false,
+                endereco: created.endereco || ''
+              }
+              return dependenteService.create(payload)
+            }))
+          } catch (err) {
+            console.warn('Falha ao salvar dependentes:', err)
+            toast.error('Sócio cadastrado, mas falha ao salvar dependentes no servidor.')
+            navigate('/socios')
+            return
+          }
+        }
+
         toast.success('Sócio cadastrado com sucesso!')
         navigate('/socios')
       })
@@ -190,8 +215,26 @@ export default function NovoSocio() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold">Invernada de Dança *</label>
-                <select value={form.invernada} onChange={e => setField('invernada', e.target.value)} className={inputClass} disabled={cadastrando}>
+                <select
+                  value={form.invernada}
+                  onChange={e => setField('invernada', e.target.value)}
+                  className={`${inputClass} ${!form.dancarino ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : ''}`}
+                  disabled={cadastrando || !form.dancarino}
+                >
                   {INVERNADAS.map(inv => <option key={inv}>{inv}</option>)}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold">É dançarino?</label>
+                <select
+                  value={String(form.dancarino)}
+                  onChange={e => setField('dancarino', e.target.value === 'true')}
+                  className={inputClass}
+                  disabled={cadastrando}
+                >
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
                 </select>
               </div>
 
@@ -235,10 +278,9 @@ export default function NovoSocio() {
             </div>
             {dependentes.map((dep, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4 mt-3.5 border border-gray-200">
-                <h4 className="font-bold text-[#1a3560] mb-2">Dependente {i + 1}</h4>
-                <p className="text-sm mb-1"><strong>Matrícula:</strong> {dep.matricula}</p>
-                <p className="text-sm mb-1"><strong>Nome:</strong> {dep.nome}</p>
-                <p className="text-sm"><strong>CPF:</strong> {dep.cpf}</p>
+                    <h4 className="font-bold text-[#1a3560] mb-2">Dependente {i + 1}</h4>
+                    <p className="text-sm mb-1"><strong>Nome:</strong> {dep.nome}</p>
+                    <p className="text-sm"><strong>CPF:</strong> {dep.cpf}</p>
               </div>
             ))}
           </section>
