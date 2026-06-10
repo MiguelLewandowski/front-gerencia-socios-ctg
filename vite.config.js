@@ -8,6 +8,10 @@ export default defineConfig({
     react(),
   ],
   server: {
+    port: 8004,
+    allowedHosts: [
+      'if4health.charqueadas.ifsul.edu.br' // Removido o acento do "i"
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

@@ -1,50 +1,26 @@
-import { apiRequest } from './api'
-
-function mapBackendToFrontend(d) {
-  if (!d) return d
-  return {
-    id: d.id,
-    nome: d.nome_completo || d.nome || '',
-    cpf: d.cpf || '',
-    telefone: d.telefone || '',
-    data_nascimento: d.data_nascimento || d.nascimento || null,
-    dancarino: typeof d.dancarino === 'boolean' ? d.dancarino : (d.dancarino == 1),
-    socio_titular_id: d.socio_titular_id || d.socio_id || null,
-  }
-}
-
-function mapFrontendToBackend(f) {
-  return {
-    id: f.id,
-    socio_titular_id: f.socio_titular_id ?? f.socio_id ?? null,
-    nome_completo: f.nome || f.nome_completo || '',
-    cpf: f.cpf || '',
-    telefone: f.telefone || '',
-    data_nascimento: f.data_nascimento || null,
-    dancarino: !!f.dancarino,
-  }
-}
+import { apiRequest } from "./api";
+import { mapBackendToFrontendDependente, mapFrontendToBackendDependente } from "../utils/dependenteMapper";
 
 export const dependenteService = {
   async getAll() {
     const data = await apiRequest('/dependentes')
-    return Array.isArray(data) ? data.map(mapBackendToFrontend) : []
+    return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
   },
 
   async getBySocioId(socioId) {
     // try query param
     try {
       const data = await apiRequest(`/dependentes?socio_id=${socioId}`)
-      return Array.isArray(data) ? data.map(mapBackendToFrontend) : []
+      return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
     } catch (err) {
       // fallback to nested route
       const data = await apiRequest(`/socios/${socioId}/dependentes`)
-      return Array.isArray(data) ? data.map(mapBackendToFrontend) : []
+      return Array.isArray(data) ? data.map(mapBackendToFrontendDependente) : []
     }
   },
 
   async create(dep) {
-    const payload = mapFrontendToBackend(dep)
+    const payload = mapFrontendToBackendDependente(dep)
     // remove id if null
     if (payload.id == null) delete payload.id
     return apiRequest('/dependentes', {
@@ -54,7 +30,7 @@ export const dependenteService = {
   },
 
   async update(id, dep) {
-    const payload = mapFrontendToBackend(dep)
+    const payload = mapFrontendToBackendDependente(dep)
     // ensure id not duplicated in body if backend doesn't expect it
     if (payload.id == null) delete payload.id
     return apiRequest(`/dependentes/${id}`, {
